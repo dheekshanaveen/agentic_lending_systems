@@ -1,12 +1,13 @@
 from pydantic import BaseModel
+from datetime import date
 
 class ApplicationRequest(BaseModel):
     name: str
-    dob: str
+    dob: date
     phone: str
     email: str
-    aadhaar_number: str   # FIXED
-    pan: str = ""         # optional
+    aadhaar_number: str
+    pan: str | None = None
     address: str
     income: int
     loan_amount: int

@@ -17,29 +17,25 @@ pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tessera
 def extract_dob(lines):
     dob_pattern = r"\b\d{2}/\d{2}/\d{4}\b"
     for line in lines:
-        L = line.upper()
-        if "DOB" in L or "DATE OF BIRTH" in L:
+        upper = line.upper()
+        if "DOB" in upper or "DATE OF BIRTH" in upper:
             m = re.search(dob_pattern, line)
             if m:
-                return m.group()
-    return None
+                return m.group(), lines.index(line)
+    return None, None
 
 
-# -------- Name Extractor --------
-def extract_name(lines, dob):
-    if not dob:
+# -------- Name Extractor (STRICT: EXACTLY ONE LINE ABOVE DOB) --------
+def extract_name_strict(lines, dob_index):
+    if dob_index is None or dob_index <= 0:
         return None
 
-    name_pattern = r"^[A-Za-z][A-Za-z\s\.]{2,}$"
+    possible_name = lines[dob_index - 1].strip()
 
-    for i, line in enumerate(lines):
-        if dob in line:
-            positions = [i-2, i-1, i+1, i+2]
-            for p in positions:
-                if 0 <= p < len(lines):
-                    cand = lines[p].strip()
-                    if re.fullmatch(name_pattern, cand):
-                        return cand
+    # allow only English letters, spaces, dots
+    if re.fullmatch(r"[A-Za-z\s\.]{3,}", possible_name):
+        return possible_name
+
     return None
 
 
@@ -61,13 +57,18 @@ def extract_text(file_path: str) -> str:
 def parse_aadhaar_text(text: str):
     lines = text.split("\n")
 
+    # Aadhaar number
     aadhaar_regex = r"\b\d{4}\s\d{4}\s\d{4}\b"
-    a_match = re.search(aadhaar_regex, text)
-    aadhaar = a_match.group() if a_match else None
+    match = re.search(aadhaar_regex, text)
+    aadhaar = match.group() if match else None
 
-    dob = extract_dob(lines)
-    name = extract_name(lines, dob)
+    # DOB
+    dob, dob_index = extract_dob(lines)
 
+    # STRICT Name extraction
+    name = extract_name_strict(lines, dob_index)
+
+    # Address
     address = ""
     if "Address" in text:
         start = text.index("Address")
@@ -82,12 +83,12 @@ def parse_aadhaar_text(text: str):
     }
 
 
-# -------- Compare --------
+# -------- Comparison --------
 def compare_with_intake(intake, ocr):
     failed = []
     result = {}
 
-    # Name
+    # NAME
     if ocr["name"] and fuzz.ratio(intake.name.lower(), ocr["name"].lower()) >= 70:
         result["name_match"] = True
     else:
@@ -101,14 +102,14 @@ def compare_with_intake(intake, ocr):
         result["dob_match"] = False
         failed.append("dob")
 
-    # Aadhaar
-    if (ocr["aadhaar_number"] or "").replace(" ", "") == (intake.aadhaar_number or "").replace(" ", ""):
+    # AADHAAR NUMBER
+    if (ocr["aadhaar_number"] or "").replace(" ", "") == (intake.aadhaar or "").replace(" ", ""):
         result["aadhaar_match"] = True
     else:
         result["aadhaar_match"] = False
         failed.append("aadhaar_number")
 
-    # Address
+    # ADDRESS
     if fuzz.partial_ratio(intake.address.lower(), (ocr["address"] or "").lower()) >= 60:
         result["address_match"] = True
     else:
@@ -117,7 +118,7 @@ def compare_with_intake(intake, ocr):
 
     if failed:
         status = "REJECTED"
-        message = "Mismatch in " + ", ".join(failed)
+        message = "Mismatch in: " + ", ".join(failed)
     else:
         status = "APPROVED"
         message = "All fields matched"
@@ -132,8 +133,8 @@ def compare_with_intake(intake, ocr):
 # -------- Main Aadhaar OCR Agent --------
 def run_aadhaar_ocr_agent(app_id: int, file_path: str):
     db = SessionLocal()
-
     intake = db.query(Application).filter(Application.app_id == app_id).first()
+
     if not intake:
         return {"error": "Invalid application ID"}
 

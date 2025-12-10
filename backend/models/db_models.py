@@ -14,21 +14,17 @@ import datetime
 
 Base = declarative_base()
 
-
 # 1) Base application table
 class Application(Base):
     __tablename__ = "applications"
 
     app_id = Column(Integer, primary_key=True, index=True)
-
     name = Column(String)
     dob = Column(Date)
     phone = Column(String)
     email = Column(String)
-
-    aadhaar_number = Column(String)    # NOW AADHAAR GOES HERE
-    pan = Column(String)               # PAN separate (used later)
-
+    aadhaar = Column(String)          # FIXED – correct column name
+    pan = Column(String)
     address = Column(Text)
     income = Column(Integer)
     loan_amount = Column(Integer)
@@ -46,7 +42,7 @@ class KYCData(Base):
 
     extracted_name = Column(String)
     extracted_dob = Column(String)
-    extracted_aadhaar = Column(String)        # FIXED
+    extracted_aadhaar = Column(String)      # FIXED
     extracted_address = Column(Text)
 
     ocr_confidence = Column(Float)

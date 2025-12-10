@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from backend.schemas.request_schemas import ApplicationRequest
 from backend.database import SessionLocal
 from backend.models.db_models import Application
-from datetime import datetime
 
 router = APIRouter(prefix="/apply", tags=["Application"])
 
@@ -11,15 +10,16 @@ router = APIRouter(prefix="/apply", tags=["Application"])
 def apply(req: ApplicationRequest):
     db = SessionLocal()
 
-    dob = datetime.strptime(req.dob, "%Y-%m-%d").date()
+    # req.dob is already a datetime.date → DO NOT PARSE AGAIN
+    dob = req.dob
 
     app = Application(
         name=req.name,
         dob=dob,
         phone=req.phone,
         email=req.email,
-        aadhaar_number=req.aadhaar_number,   # FIXED
-        pan=req.pan,
+        aadhaar=req.aadhaar_number,   # store aadhaar
+        pan=req.pan,                   # pan may be NULL
         address=req.address,
         income=req.income,
         loan_amount=req.loan_amount,
@@ -31,4 +31,7 @@ def apply(req: ApplicationRequest):
     db.refresh(app)
     db.close()
 
-    return {"application_id": app.app_id, "status": "Application Received"}
+    return {
+        "application_id": app.app_id,
+        "status": "Application Received"
+    }
