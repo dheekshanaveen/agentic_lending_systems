@@ -5,7 +5,8 @@ class ApplicationRequest(BaseModel):
     dob: str
     phone: str
     email: str
-    pan: str
+    aadhaar_number: str   # FIXED
+    pan: str = ""         # optional
     address: str
     income: int
     loan_amount: int
