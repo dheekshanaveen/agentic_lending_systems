@@ -25,15 +25,19 @@ class Application(Base):
     status = Column(String, default="PENDING")
 
 
+# 2) OCR output
 class KYCData(Base):
     __tablename__ = "kyc_data"
 
     id = Column(Integer, primary_key=True, index=True)
     app_id = Column(Integer, index=True)
+
     extracted_name = Column(String)
     extracted_dob = Column(String)
     extracted_aadhaar = Column(String)
+    extracted_pan = Column(String)        # NEW
     extracted_address = Column(Text)
+
     ocr_confidence = Column(Float)
     updated_at = Column(DateTime, default=datetime.datetime.now)
 
