@@ -78,3 +78,32 @@ CREATE TABLE manual_review (
     notes TEXT,
     reviewed_at TIMESTAMP DEFAULT NOW()
 );
+-- Salary slips table
+CREATE TABLE salary_slips (
+  id SERIAL PRIMARY KEY,
+  app_id INTEGER REFERENCES applications(app_id),
+  file_path TEXT,
+  employer TEXT,
+  employee_name TEXT,
+  employee_id TEXT,
+  month TEXT,
+  gross_amount NUMERIC,
+  net_amount NUMERIC,
+  parsed_json TEXT, -- raw JSON from Gemini
+  ocr_confidence FLOAT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Bank statements table
+CREATE TABLE bank_statements (
+  id SERIAL PRIMARY KEY,
+  app_id INTEGER REFERENCES applications(app_id),
+  file_path TEXT,
+  account_holder TEXT,
+  account_number TEXT,
+  average_balance NUMERIC,
+  monthly_inflow NUMERIC,
+  parsed_json TEXT,
+  ocr_confidence FLOAT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
